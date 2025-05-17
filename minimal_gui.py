@@ -81,13 +81,19 @@ class MainWindow(QWidget):
         tab1.layout().addWidget(self.project_tree)
 
         proj_btn_layout = QHBoxLayout()
-        proj_load_btn = QPushButton("Load")
+        proj_add_btn = QPushButton("Add Node")
+        proj_remove_btn = QPushButton("Remove Node")
         proj_save_btn = QPushButton("Save As")
+        proj_load_btn = QPushButton("Load")
+        proj_btn_layout.addWidget(proj_add_btn)
+        proj_btn_layout.addWidget(proj_remove_btn)
         proj_btn_layout.addWidget(proj_save_btn)
         proj_btn_layout.addWidget(proj_load_btn)
 
         tab1.layout().addLayout(proj_btn_layout)
 
+        proj_add_btn.clicked.connect(self.add_project_node)
+        proj_remove_btn.clicked.connect(self.remove_project_node)
         proj_load_btn.clicked.connect(self.load_project)
         proj_save_btn.clicked.connect(self.save_project_as)
 
@@ -110,8 +116,8 @@ class MainWindow(QWidget):
         mat_btn_layout.addWidget(mat_load_btn)
         tab2.layout().addLayout(mat_btn_layout)
 
-        mat_add_btn.clicked.connect(self.add_node)
-        mat_remove_btn.clicked.connect(self.remove_node)
+        mat_add_btn.clicked.connect(self.add_material_node)
+        mat_remove_btn.clicked.connect(self.remove_material_node)
         mat_save_btn.clicked.connect(self.save_materials_as)
         mat_load_btn.clicked.connect(self.load_materials)
 
@@ -120,6 +126,29 @@ class MainWindow(QWidget):
         layout.addWidget(tabs)
 
     # --- Project File Methods ---
+
+    def add_project_node(self):
+        selected = self.project_tree.currentItem()
+        if not selected:
+            QMessageBox.warning(self, "No Selection", "Please select a node to add a child to.")
+            return
+        child = QTreeWidgetItem(["new_key", "value"])
+        child.setFlags(child.flags() | Qt.ItemIsEditable)
+        selected.addChild(child)
+        selected.setExpanded(True)
+
+    def remove_project_node(self):
+        selected = self.project_tree.currentItem()
+        if not selected:
+            QMessageBox.warning(self, "No Selection", "Please select a node to remove.")
+            return
+        parent = selected.parent()
+        if parent:
+            parent.removeChild(selected)
+        else:
+            idx = self.project_tree.indexOfTopLevelItem(selected)
+            self.project_tree.takeTopLevelItem(idx)
+
     def load_project(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Load Project", "", "Project Files (*.proj *.txt);;All Files (*)")
         if file_path:
@@ -150,7 +179,7 @@ class MainWindow(QWidget):
             QMessageBox.information(self, "Saved", f"Project saved to {file_path}")
 
     # --- Material File Methods ---
-    def add_node(self):
+    def add_material_node(self):
         selected = self.material_tree.currentItem()
         if not selected:
             QMessageBox.warning(self, "No Selection", "Please select a node to add a child to.")
@@ -160,7 +189,7 @@ class MainWindow(QWidget):
         selected.addChild(child)
         selected.setExpanded(True)
 
-    def remove_node(self):
+    def remove_material_node(self):
         selected = self.material_tree.currentItem()
         if not selected:
             QMessageBox.warning(self, "No Selection", "Please select a node to remove.")
