@@ -18,9 +18,7 @@ refinement.relative.tolerance    0.01
 refinement.absolute.tolerance    1e-06
 refinement.variable    S
 frequency.plan.point    4.75e9
-frequency.plan.point    8.5e9
 frequency.plan.linear    1e9,10e9,0.1e9
-frequency.plan.linear    1e9,10e9,1e9
 frequency.plan.log    0.1e9,1e9,3
 reference.impedance    0
 antenna.plot.3D.pattern    q=G

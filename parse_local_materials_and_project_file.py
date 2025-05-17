@@ -37,13 +37,8 @@ class ProjectFileIO:
                 key = key.strip()
                 value = value.strip()
                 # if the key is not already in the dictionary, add it
-                if key not in project_data and 'frequency.plan' not in key:
+                if key not in project_data:
                     project_data[key] = value
-                elif 'frequency.plan' in key:
-                    # if the key is already in the dictionary, append the value to the list
-                    if key not in project_data:
-                        project_data[key] = []
-                    project_data[key].append(value)
 
         return project_data
 
@@ -53,15 +48,8 @@ class ProjectFileIO:
         """
         with open(project_file, 'w') as file:
             for key, value in project_dict.items():
-                # if the value is a list, enter the list and write each item on a new line
-                if isinstance(value, list):
-                    for item in value:
-                        # write the key and value to the file
-                        file.write(f"{key}    {item}\n")
                 # write the key and value to the file
-                else:
-                    # if the value is a string, write the key and value to the file
-                    file.write(f"{key}    {value}\n")
+                file.write(f"{key}    {value}\n")
 
 
 class MaterialFileIO:
@@ -96,7 +84,13 @@ class MaterialFileIO:
                     parent = stack[-1]
                     parent_key = key_stack[-1]
                     if isinstance(parent, dict):
-                        parent[finished_key] = finished
+                        # --- Support multiple blocks with the same tag ---
+                        if finished_key in parent:
+                            if not isinstance(parent[finished_key], list):
+                                parent[finished_key] = [parent[finished_key]]
+                            parent[finished_key].append(finished)
+                        else:
+                            parent[finished_key] = finished
                 continue
 
             # If we're inside a multi-line block (like Source), always append
@@ -132,7 +126,13 @@ class MaterialFileIO:
             if isinstance(obj, dict):
                 for k, v in obj.items():
                     if isinstance(v, list):
-                        obj[k] = "\n".join(v)
+                        # If it's a list of dicts, flatten each dict
+                        if all(isinstance(i, dict) for i in v):
+                            obj[k] = [flatten(i) for i in v]
+                        # If it's a list of strings, join them
+                        elif all(isinstance(i, str) for i in v):
+                            obj[k] = "\n".join(v)
+                        # Mixed types: leave as-is or handle as needed
                     elif isinstance(v, dict):
                         flatten(v)
             return obj
@@ -153,15 +153,18 @@ class MaterialFileIO:
             indent_str = "   " * indent
             if isinstance(obj, dict):
                 for k, v in obj.items():
-                    # If the key is 'name', write as key=value
                     if k == "name":
                         file.write(f"{indent_str}{k}={v}\n")
                     elif isinstance(v, dict):
                         file.write(f"{indent_str}{k}\n")
                         write_block(v, file, indent + 1)
                         file.write(f"{indent_str}End{k}\n")
+                    elif isinstance(v, list):
+                        for item in v:
+                            file.write(f"{indent_str}{k}\n")
+                            write_block(item, file, indent + 1)
+                            file.write(f"{indent_str}End{k}\n")
                     elif isinstance(v, str) and "\n" in v:
-                        # Multi-line string (like Source)
                         file.write(f"{indent_str}{k}\n")
                         for line in v.splitlines():
                             file.write(f"{indent_str}   {line}\n")

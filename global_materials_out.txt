@@ -48,6 +48,45 @@ Material
 EndMaterial
 
 Material
+   name=FR4_complex
+   Temperature
+      temperature=0 to 20
+      Frequency
+         frequency=0 to 40
+         er=4.2
+         mur=1
+         tand=0.02
+         Rz=0
+      EndFrequency
+      Frequency
+         frequency=40 to 70
+         er=3.9
+         mur=1
+         tand=0.02
+         Rz=0
+      EndFrequency
+   EndTemperature
+   Temperature
+      temperature=20 to 50
+      Frequency
+         frequency=0 to 40
+         er=4.25
+         mur=1
+         tand=0.02
+         Rz=0
+      EndFrequency
+      Frequency
+         frequency=40 to 70
+         er=3.95
+         mur=1
+         tand=0.02
+         Rz=0
+      EndFrequency
+   EndTemperature
+   Source=generic approximatation
+EndMaterial
+
+Material
    name=FR4
    Temperature
       temperature=any
