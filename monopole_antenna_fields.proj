@@ -20,6 +20,10 @@ refinement.variable            S
 //frequency.plan.point.refine    10e9
 //frequency.plan.linear          1e9,10e9,0.1e9
 frequency.plan.point           4.75e9
+frequency.plan.linear    1e9,10e9,0.1e9
+frequency.plan.linear 1e9,10e9,1e9
+frequency.plan.log 0.1e9,1e9,3
+frequency.plan.point 8.5e9
 reference.impedance            0
 antenna.plot.3D.pattern        q=G
 antenna.plot.2D.pattern        q1=G,plane=xy,latitude=15

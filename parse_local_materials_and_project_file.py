@@ -37,8 +37,13 @@ class ProjectFileIO:
                 key = key.strip()
                 value = value.strip()
                 # if the key is not already in the dictionary, add it
-                if key not in project_data:
+                if key not in project_data and 'frequency.plan' not in key:
                     project_data[key] = value
+                elif 'frequency.plan' in key:
+                    # if the key is already in the dictionary, append the value to the list
+                    if key not in project_data:
+                        project_data[key] = []
+                    project_data[key].append(value)
 
         return project_data
 
@@ -48,8 +53,15 @@ class ProjectFileIO:
         """
         with open(project_file, 'w') as file:
             for key, value in project_dict.items():
+                # if the value is a list, enter the list and write each item on a new line
+                if isinstance(value, list):
+                    for item in value:
+                        # write the key and value to the file
+                        file.write(f"{key}    {item}\n")
                 # write the key and value to the file
-                file.write(f"{key}    {value}\n")
+                else:
+                    # if the value is a string, write the key and value to the file
+                    file.write(f"{key}    {value}\n")
 
 
 class MaterialFileIO:
@@ -173,7 +185,7 @@ proj_file_dict = pfio.read_project_file(project_file)
 pfio.write_project_file(proj_file_dict, output_project_file)
 
 mfio = MaterialFileIO()
-material_file_dict = mfio.read_material_file('local_materials.txt')
-mfio.write_material_file(material_file_dict, 'local_materials_out.txt')
+material_file_dict = mfio.read_material_file('global_materials.txt')
+mfio.write_material_file(material_file_dict, 'global_materials_out.txt')
 print(proj_file_dict)
 print(material_file_dict)
