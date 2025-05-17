@@ -3,44 +3,10 @@ from PySide6.QtWidgets import (
     QLabel, QPushButton, QHBoxLayout, QMessageBox, QFileDialog
 )
 from PySide6.QtCore import Qt
+from parse_local_materials_and_project_file import MaterialFileIO
 import sys
 
-material_file_dict = {
-    "FR4_simple": {
-        "name": "FR4_simple",
-        "Temperature": {
-            "temperature": "any",
-            "Frequency": {
-                "frequency": "any",
-                "er": "4.2",
-                "mur": "1",
-                "tand": "0.02",
-                "Rz": "0"
-            }
-        },
-        "Source": "generic approximatation"
-    },
-    "FR4_complex": {
-        "name": "FR4_complex",
-        "Temperature": [
-            {
-                "temperature": "0 to 20",
-                "Frequency": [
-                    {"frequency": "0 to 40", "er": "4.2", "mur": "1", "tand": "0.02", "Rz": "0"},
-                    {"frequency": "40 to 70", "er": "3.9", "mur": "1", "tand": "0.02", "Rz": "0"}
-                ]
-            },
-            {
-                "temperature": "20 to 50",
-                "Frequency": [
-                    {"frequency": "0 to 40", "er": "4.25", "mur": "1", "tand": "0.02", "Rz": "0"},
-                    {"frequency": "40 to 70", "er": "3.95", "mur": "1", "tand": "0.02", "Rz": "0"}
-                ]
-            }
-        ],
-        "Source": "generic approximatation"
-    }
-}
+material_file_dict = {}
 
 def populate_tree(parent, data):
     if isinstance(data, dict):
@@ -109,18 +75,18 @@ class MainWindow(QWidget):
         btn_layout = QHBoxLayout()
         add_btn = QPushButton("Add Node")
         remove_btn = QPushButton("Remove Node")
-        save_btn = QPushButton("Save")
         save_as_btn = QPushButton("Save As")
+        load_btn = QPushButton("Load")
         btn_layout.addWidget(add_btn)
         btn_layout.addWidget(remove_btn)
-        btn_layout.addWidget(save_btn)
         btn_layout.addWidget(save_as_btn)
+        btn_layout.addWidget(load_btn)
         tab2.layout().addLayout(btn_layout)
 
         add_btn.clicked.connect(self.add_node)
         remove_btn.clicked.connect(self.remove_node)
-        save_btn.clicked.connect(self.save_materials)
         save_as_btn.clicked.connect(self.save_materials_as)
+        load_btn.clicked.connect(self.load_materials)
 
         # Add tabs
         tabs.addTab(tab1, "Project File")
@@ -155,7 +121,6 @@ class MainWindow(QWidget):
             self.tree.takeTopLevelItem(idx)
 
     def save_materials(self):
-        from parse_local_materials import MaterialFileIO
         mfio = MaterialFileIO()
         material_dict = get_material_file_dict_from_tree(self.tree)
         mfio.write_material_file(material_dict, self.material_file_path)
@@ -167,6 +132,23 @@ class MainWindow(QWidget):
             self.material_file_path = file_path
             self.save_materials()
 
+    def load_materials(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Load", "", "Material Files (*.txt);;All Files (*)")
+        if file_path:
+            mfio = MaterialFileIO()
+            try:
+                material_dict = mfio.read_material_file(file_path)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to load file:\n{e}")
+                return
+            self.tree.clear()
+            for mat_name, mat_data in material_dict.items():
+                mat_item = QTreeWidgetItem([mat_name])
+                mat_item.setFlags(mat_item.flags() | Qt.ItemIsEditable)
+                self.tree.addTopLevelItem(mat_item)
+                populate_tree(mat_item, mat_data)
+            QMessageBox.information(self, "Loaded", f"Loaded materials from {file_path}")
+            
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()

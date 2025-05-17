@@ -1,8 +1,4 @@
 import yaml
-
-project_file = 'monopole_antenna_fields.proj'
-output_project_file = 'monopole_antenna_fields2.proj'
-
 class ProjectFileIO:
     def str2bool(self, value):
         """
@@ -183,12 +179,18 @@ class MaterialFileIO:
                 write_block(mat, file, 1)
                 file.write("End" + start_tag + "\n\n")
 
-pfio = ProjectFileIO()
-proj_file_dict = pfio.read_project_file(project_file)
-pfio.write_project_file(proj_file_dict, output_project_file)
+if __name__ == "__main__":
+    # Example usage
+    project_file = 'monopole_antenna_fields.proj'
+    output_project_file = 'monopole_antenna_fields2.proj'
 
-mfio = MaterialFileIO()
-material_file_dict = mfio.read_material_file('global_materials.txt')
-mfio.write_material_file(material_file_dict, 'global_materials_out.txt')
-print(proj_file_dict)
-print(material_file_dict)
+    # Read and write project file
+    pfio = ProjectFileIO()
+    proj_file_dict = pfio.read_project_file(project_file)
+    pfio.write_project_file(proj_file_dict, output_project_file)
+
+    mfio = MaterialFileIO()
+    material_file_dict = mfio.read_material_file('global_materials.txt')
+    mfio.write_material_file(material_file_dict, 'global_materials_out.txt')
+    print(proj_file_dict)
+    print(material_file_dict)
