@@ -28,8 +28,16 @@ def populate_tree(parent, data):
 
 
 def tree_to_dict(item):
+    # If the item has no children, return its text
     if item.childCount() == 0:
         return item.text(0)
+    # If the item has one child, and the child's text equals its value, treat as key=value
+    if item.childCount() == 1:
+        child = item.child(0)
+        # If the child has no children and its text is not a list index, treat as value
+        if child.childCount() == 0 and not (child.text(0).startswith('[') and child.text(0).endswith(']')):
+            return child.text(0)
+    # If children are list-like ([0], [1], ...)
     is_list = all(child.text(0).startswith('[') and child.text(0).endswith(']') for child in [item.child(i) for i in range(item.childCount())])
     if is_list:
         return [tree_to_dict(item.child(i)) for i in range(item.childCount())]
