@@ -1,0 +1,189 @@
+FR4:
+  Source: 'A.R. Djordjevi, R.M Biljie, V.D. Likar-Dmiljanic, T.K. Sarkar,
+
+    "Wideband Frequency-Domain Characterization of FR-4 and Time-Domain Causality,"
+
+    IEEE Trans. Electromagnetic Compatibility, Nov. 2001, pp. 662-667.'
+  Temperature:
+    conductivity: 80e-12
+    delta_er: '1.12'
+    er_infinity: '4.27'
+    m1: '4'
+    m2: '12'
+    mur: '1'
+    temperature: any
+  name: FR4
+FR4_complex:
+  Source: generic approximatation
+  Temperature:
+  - Frequency:
+    - Rz: '0'
+      er: '4.2'
+      frequency: 0 to 40
+      mur: '1'
+      tand: '0.02'
+    - Rz: '0'
+      er: '3.9'
+      frequency: 40 to 70
+      mur: '1'
+      tand: '0.02'
+    temperature: 0 to 20
+  - Frequency:
+    - Rz: '0'
+      er: '4.25'
+      frequency: 0 to 40
+      mur: '1'
+      tand: '0.02'
+    - Rz: '0'
+      er: '3.95'
+      frequency: 40 to 70
+      mur: '1'
+      tand: '0.02'
+    temperature: 20 to 50
+  name: FR4_complex
+FR4_simple:
+  Source: generic approximatation
+  Temperature:
+    Frequency:
+      Rz: '0'
+      er: '4.2'
+      frequency: any
+      mur: '1'
+      tand: '0.02'
+    temperature: any
+  name: FR4_simple
+Lee_semiconductor:
+  Source: 'Jin-Fa Lee, "Finite Element Analysis of Lossy Dielectric Waveguides,"
+
+    IEEE Trans. Microwave Theory and Techniques, vol.42, no. 7, June 1994, pp. 1025-1031.'
+  Temperature:
+    Frequency:
+      Rz: '0'
+      conductivity: '0.05'
+      er: '9.0'
+      frequency: any
+      mur: '1'
+    temperature: any
+  name: Lee_semiconductor
+Teflon:
+  Source: 'David M. Pozar, "Microwave Engineering," Addison-Wesley Publishing Company,
+    1990, p.715.
+
+    10 GHz'
+  Temperature:
+    Frequency:
+      Rz: '0'
+      er: '2.08'
+      frequency: any
+      mur: '1'
+      tand: '0.0004'
+    temperature: '25'
+  name: Teflon
+air:
+  Source: 'Constantine A. Balanis, "Advanced Engineering Electromagnetics",
+
+    John Wiley and Sons, 1989, p.79.'
+  Temperature:
+    Frequency:
+      Rz: '0'
+      er: '1.0006'
+      frequency: any
+      mur: '1'
+      tand: '0'
+    temperature: any
+  name: air
+aluminum:
+  Source: David M. Pozar, "Microwave Engineering," Addison-Wesley Publishing Company,
+    1990, p.714.
+  Temperature:
+    Frequency:
+      Rz: '0'
+      conductivity: 3.816e7
+      er: '1'
+      frequency: any
+      mur: '1'
+    temperature: '20'
+  name: aluminum
+brass:
+  Source: David M. Pozar, "Microwave Engineering," Addison-Wesley Publishing Company,
+    1990, p.714.
+  Temperature:
+    Frequency:
+      Rz: '0'
+      conductivity: 2.564e7
+      er: '1'
+      frequency: any
+      mur: '1'
+    temperature: '20'
+  name: brass
+bronze:
+  Source: David M. Pozar, "Microwave Engineering," Addison-Wesley Publishing Company,
+    1990, p.714.
+  Temperature:
+    Frequency:
+      Rz: '0'
+      conductivity: 1.00e7
+      er: '1'
+      frequency: any
+      mur: '1'
+    temperature: '20'
+  name: bronze
+copper:
+  Source: David M. Pozar, "Microwave Engineering," Addison-Wesley Publishing Company,
+    1990, p.714.
+  Temperature:
+    Frequency:
+      Rz: '0'
+      conductivity: 5.813e7
+      er: '1'
+      frequency: any
+      mur: '1'
+    temperature: '20'
+  name: copper
+freespace:
+  Source: physics definition
+  Temperature:
+    Frequency:
+      Rz: '0'
+      er: '1'
+      frequency: any
+      mur: '1'
+      tand: '0'
+    temperature: any
+  name: freespace
+gold:
+  Source: David M. Pozar, "Microwave Engineering," Addison-Wesley Publishing Company,
+    1990, p.714.
+  Temperature:
+    Frequency:
+      Rz: '0'
+      conductivity: 4.098e7
+      er: '1'
+      frequency: any
+      mur: '1'
+    temperature: '20'
+  name: gold
+lead:
+  Source: David M. Pozar, "Microwave Engineering," Addison-Wesley Publishing Company,
+    1990, p.714.
+  Temperature:
+    Frequency:
+      Rz: '0'
+      conductivity: 4.56e6
+      er: '1'
+      frequency: any
+      mur: '1'
+    temperature: '20'
+  name: lead
+silver:
+  Source: David M. Pozar, "Microwave Engineering," Addison-Wesley Publishing Company,
+    1990, p.714.
+  Temperature:
+    Frequency:
+      Rz: '0'
+      conductivity: 6.173e7
+      er: '1'
+      frequency: any
+      mur: '1'
+    temperature: '20'
+  name: silver

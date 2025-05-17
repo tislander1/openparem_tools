@@ -3,57 +3,66 @@ from PySide6.QtWidgets import (
     QLabel, QPushButton, QHBoxLayout, QMessageBox, QFileDialog
 )
 from PySide6.QtCore import Qt
-from parse_local_materials_and_project_file import MaterialFileIO
+from parse_local_materials_and_project_file import MaterialFileIO, ProjectFileIO
 import sys
 
 material_file_dict = {}
+project_file_dict = {}
 
 def populate_tree(parent, data):
     if isinstance(data, dict):
         for k, v in data.items():
-            child = QTreeWidgetItem([str(k)])
-            child.setFlags(child.flags() | Qt.ItemIsEditable)
-            parent.addChild(child)
-            populate_tree(child, v)
+            if isinstance(v, (dict, list)):
+                child = QTreeWidgetItem([str(k), ""])
+                parent.addChild(child)
+                populate_tree(child, v)
+            else:
+                child = QTreeWidgetItem([str(k), str(v)])
+                child.setFlags(child.flags() | Qt.ItemIsEditable)
+                parent.addChild(child)
     elif isinstance(data, list):
-        for idx, item in enumerate(data):
-            child = QTreeWidgetItem([f"[{idx}]"])
-            child.setFlags(child.flags() | Qt.ItemIsEditable)
-            parent.addChild(child)
-            populate_tree(child, item)
-    else:
-        child = QTreeWidgetItem([str(data)])
-        child.setFlags(child.flags() | Qt.ItemIsEditable)
-        parent.addChild(child)
-
+        for item in data:
+            # For lists of values (like duplicate keys in project file)
+            if isinstance(item, dict) or isinstance(item, list):
+                child = QTreeWidgetItem(["", ""])
+                parent.addChild(child)
+                populate_tree(child, item)
+            else:
+                # Use parent's key for duplicate key lists
+                child = QTreeWidgetItem([parent.text(0), str(item)])
+                child.setFlags(child.flags() | Qt.ItemIsEditable)
+                parent.addChild(child)
 
 def tree_to_dict(item):
-    # If the item has no children, return its text
+    # If the item has no children, return its value (column 1)
     if item.childCount() == 0:
-        return item.text(0)
-    # If the item has one child, and the child's text equals its value, treat as key=value
-    if item.childCount() == 1:
-        child = item.child(0)
-        # If the child has no children and its text is not a list index, treat as value
-        if child.childCount() == 0 and not (child.text(0).startswith('[') and child.text(0).endswith(']')):
-            return child.text(0)
-    # If children are list-like ([0], [1], ...)
-    is_list = all(child.text(0).startswith('[') and child.text(0).endswith(']') for child in [item.child(i) for i in range(item.childCount())])
+        return item.text(1)
+    # Gather all keys
+    keys = [item.child(i).text(0) for i in range(item.childCount())]
+    # If all children are list-like ([0], [1], ...)
+    is_list = all(k.startswith('[') and k.endswith(']') for k in keys)
     if is_list:
         return [tree_to_dict(item.child(i)) for i in range(item.childCount())]
-    else:
-        d = {}
-        for i in range(item.childCount()):
-            key = item.child(i).text(0)
-            value = tree_to_dict(item.child(i))
-            d[key] = value
-        return d
+    # If there are duplicate keys, store as list
+    result = {}
+    key_counts = {}
+    for key in keys:
+        key_counts[key] = key_counts.get(key, 0) + 1
+    for i, key in enumerate(keys):
+        value = tree_to_dict(item.child(i))
+        if key_counts[key] > 1:
+            if key not in result:
+                result[key] = []
+            result[key].append(value)
+        else:
+            result[key] = value
+    return result
 
-def get_material_file_dict_from_tree(tree):
+def get_dict_from_tree(tree):
     result = {}
     for i in range(tree.topLevelItemCount()):
-        mat_item = tree.topLevelItem(i)
-        result[mat_item.text(0)] = tree_to_dict(mat_item)
+        item = tree.topLevelItem(i)
+        result[item.text(0)] = tree_to_dict(item)
     return result
 
 class MainWindow(QWidget):
@@ -62,62 +71,97 @@ class MainWindow(QWidget):
         self.setWindowTitle("Material/Project Editor")
         layout = QVBoxLayout(self)
         tabs = QTabWidget()
-        # Tab 1: Project File (blank for now)
+
+        # --- Project File Tab ---
         tab1 = QWidget()
         tab1.setLayout(QVBoxLayout())
-        tab1.layout().addWidget(QLabel("Project File Editor (coming soon)"))
-        # Tab 2: Material File (QTreeWidget)
+        self.project_tree = QTreeWidget()
+        self.project_tree.setHeaderLabels(["Key", "Value"])
+        self.project_tree.setEditTriggers(QTreeWidget.DoubleClicked | QTreeWidget.EditKeyPressed)
+        tab1.layout().addWidget(self.project_tree)
+
+        proj_btn_layout = QHBoxLayout()
+        proj_load_btn = QPushButton("Load")
+        proj_save_btn = QPushButton("Save As")
+        proj_btn_layout.addWidget(proj_save_btn)
+        proj_btn_layout.addWidget(proj_load_btn)
+
+        tab1.layout().addLayout(proj_btn_layout)
+
+        proj_load_btn.clicked.connect(self.load_project)
+        proj_save_btn.clicked.connect(self.save_project_as)
+
+        # --- Material File Tab ---
         tab2 = QWidget()
         tab2.setLayout(QVBoxLayout())
-        self.tree = QTreeWidget()
-        self.tree.setHeaderLabels(["Key/Index"])
-        self.tree.setEditTriggers(QTreeWidget.AllEditTriggers)
-        for mat_name, mat_data in material_file_dict.items():
-            mat_item = QTreeWidgetItem([mat_name])
-            mat_item.setFlags(mat_item.flags() | Qt.ItemIsEditable)
-            self.tree.addTopLevelItem(mat_item)
-            populate_tree(mat_item, mat_data)
-        tab2.layout().addWidget(self.tree)
+        self.material_tree = QTreeWidget()
+        self.material_tree.setHeaderLabels(["Key", "Value"])
+        self.material_tree.setEditTriggers(QTreeWidget.DoubleClicked | QTreeWidget.EditKeyPressed)
+        tab2.layout().addWidget(self.material_tree)
 
-        # Add/Remove/Save buttons
-        btn_layout = QHBoxLayout()
-        add_btn = QPushButton("Add Node")
-        remove_btn = QPushButton("Remove Node")
-        save_as_btn = QPushButton("Save As")
-        load_btn = QPushButton("Load")
-        btn_layout.addWidget(add_btn)
-        btn_layout.addWidget(remove_btn)
-        btn_layout.addWidget(save_as_btn)
-        btn_layout.addWidget(load_btn)
-        tab2.layout().addLayout(btn_layout)
+        mat_btn_layout = QHBoxLayout()
+        mat_add_btn = QPushButton("Add Node")
+        mat_remove_btn = QPushButton("Remove Node")
+        mat_save_btn = QPushButton("Save As")
+        mat_load_btn = QPushButton("Load")
+        mat_btn_layout.addWidget(mat_add_btn)
+        mat_btn_layout.addWidget(mat_remove_btn)
+        mat_btn_layout.addWidget(mat_save_btn)
+        mat_btn_layout.addWidget(mat_load_btn)
+        tab2.layout().addLayout(mat_btn_layout)
 
-        add_btn.clicked.connect(self.add_node)
-        remove_btn.clicked.connect(self.remove_node)
-        save_as_btn.clicked.connect(self.save_materials_as)
-        load_btn.clicked.connect(self.load_materials)
+        mat_add_btn.clicked.connect(self.add_node)
+        mat_remove_btn.clicked.connect(self.remove_node)
+        mat_save_btn.clicked.connect(self.save_materials_as)
+        mat_load_btn.clicked.connect(self.load_materials)
 
-        # Add tabs
         tabs.addTab(tab1, "Project File")
         tabs.addTab(tab2, "Material File")
         layout.addWidget(tabs)
 
-        self.material_file_path = "global_materials_out.txt"  # Default path
+    # --- Project File Methods ---
+    def load_project(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Load Project", "", "Project Files (*.proj *.txt);;All Files (*)")
+        if file_path:
+            pfio = ProjectFileIO()
+            try:
+                project_dict = pfio.read_project_file(file_path)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to load project file:\n{e}")
+                return
+            self.project_tree.clear()
+            for k, v in project_dict.items():
+                if isinstance(v, (dict, list)):
+                    item = QTreeWidgetItem([k, ""])
+                    self.project_tree.addTopLevelItem(item)
+                    populate_tree(item, v)
+                else:
+                    item = QTreeWidgetItem([k, str(v)])
+                    item.setFlags(item.flags() | Qt.ItemIsEditable)
+                    self.project_tree.addTopLevelItem(item)
+            QMessageBox.information(self, "Loaded", f"Loaded project from {file_path}")
 
+    def save_project_as(self):
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Project As", "", "Project Files (*.proj *.txt);;All Files (*)")
+        if file_path:
+            pfio = ProjectFileIO()
+            project_dict = get_dict_from_tree(self.project_tree)
+            pfio.write_project_file(project_dict, file_path)
+            QMessageBox.information(self, "Saved", f"Project saved to {file_path}")
+
+    # --- Material File Methods ---
     def add_node(self):
-        selected = self.tree.currentItem()
+        selected = self.material_tree.currentItem()
         if not selected:
             QMessageBox.warning(self, "No Selection", "Please select a node to add a child to.")
             return
-        child = QTreeWidgetItem(["new_key"])
+        child = QTreeWidgetItem(["new_key", "value"])
         child.setFlags(child.flags() | Qt.ItemIsEditable)
         selected.addChild(child)
-        value_child = QTreeWidgetItem(["value"])
-        value_child.setFlags(value_child.flags() | Qt.ItemIsEditable)
-        child.addChild(value_child)
         selected.setExpanded(True)
 
     def remove_node(self):
-        selected = self.tree.currentItem()
+        selected = self.material_tree.currentItem()
         if not selected:
             QMessageBox.warning(self, "No Selection", "Please select a node to remove.")
             return
@@ -125,23 +169,19 @@ class MainWindow(QWidget):
         if parent:
             parent.removeChild(selected)
         else:
-            idx = self.tree.indexOfTopLevelItem(selected)
-            self.tree.takeTopLevelItem(idx)
-
-    def save_materials(self):
-        mfio = MaterialFileIO()
-        material_dict = get_material_file_dict_from_tree(self.tree)
-        mfio.write_material_file(material_dict, self.material_file_path)
-        QMessageBox.information(self, "Saved", f"Materials saved to {self.material_file_path}")
+            idx = self.material_tree.indexOfTopLevelItem(selected)
+            self.material_tree.takeTopLevelItem(idx)
 
     def save_materials_as(self):
-        file_path, _ = QFileDialog.getSaveFileName(self, "Save As", "", "Material Files (*.txt);;All Files (*)")
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Materials As", "", "Material Files (*.txt);;All Files (*)")
         if file_path:
-            self.material_file_path = file_path
-            self.save_materials()
+            mfio = MaterialFileIO()
+            material_dict = get_dict_from_tree(self.material_tree)
+            mfio.write_material_file(material_dict, file_path)
+            QMessageBox.information(self, "Saved", f"Materials saved to {file_path}")
 
     def load_materials(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Load", "", "Material Files (*.txt);;All Files (*)")
+        file_path, _ = QFileDialog.getOpenFileName(self, "Load Materials", "", "Material Files (*.txt);;All Files (*)")
         if file_path:
             mfio = MaterialFileIO()
             try:
@@ -149,14 +189,13 @@ class MainWindow(QWidget):
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to load file:\n{e}")
                 return
-            self.tree.clear()
+            self.material_tree.clear()
             for mat_name, mat_data in material_dict.items():
-                mat_item = QTreeWidgetItem([mat_name])
-                mat_item.setFlags(mat_item.flags() | Qt.ItemIsEditable)
-                self.tree.addTopLevelItem(mat_item)
+                mat_item = QTreeWidgetItem([mat_name, ""])
+                self.material_tree.addTopLevelItem(mat_item)
                 populate_tree(mat_item, mat_data)
             QMessageBox.information(self, "Loaded", f"Loaded materials from {file_path}")
-            
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()

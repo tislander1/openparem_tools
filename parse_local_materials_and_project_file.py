@@ -16,6 +16,7 @@ class ProjectFileIO:
     def read_project_file(self, project_file):
         """
         Reads a project file and returns a dictionary of the data.
+        If a key appears more than once, its values are stored as a list.
         """
         with open(project_file, 'r') as file:
             lines = [item.strip() for item in file.readlines()]
@@ -24,16 +25,17 @@ class ProjectFileIO:
 
         for line in lines:
             if not line.startswith('//') and line:
-                # take anything before the first whitespace as the key and the rest as the value
                 key, value = line.split(maxsplit=1)
-                # remove any thing after a // in the value
                 if '//' in value:
                     value = value.split('//')[0].strip()
-                # remove any whitespace from the key and value
                 key = key.strip()
                 value = value.strip()
-                # if the key is not already in the dictionary, add it
-                if key not in project_data:
+                # Always store duplicate keys as lists
+                if key in project_data:
+                    if not isinstance(project_data[key], list):
+                        project_data[key] = [project_data[key]]
+                    project_data[key].append(value)
+                else:
                     project_data[key] = value
 
         return project_data
@@ -41,11 +43,20 @@ class ProjectFileIO:
     def write_project_file(self, project_dict, project_file):
         """
         Writes a project file from a dictionary of the data.
+        Supports lists for duplicate keys.
         """
         with open(project_file, 'w') as file:
             for key, value in project_dict.items():
-                # write the key and value to the file
-                file.write(f"{key}    {value}\n")
+                if isinstance(value, list):
+                    for v in value:
+                        file.write(f"{key}    {v}\n")
+                elif isinstance(value, dict):
+                    value_list = value[key]
+                    if isinstance(value_list, list):
+                        for v in value_list:
+                            file.write(f"{key}    {v}\n")
+                else:
+                    file.write(f"{key}    {value}\n")
 
 
 class MaterialFileIO:
