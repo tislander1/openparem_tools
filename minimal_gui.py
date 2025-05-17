@@ -6,6 +6,9 @@ from PySide6.QtCore import Qt
 from parse_local_materials_and_project_file import MaterialFileIO, ProjectFileIO
 import sys
 
+# Portions of this code were developed with the assistance
+# of GitHub Copilot, an AI programming assistant.
+
 material_file_dict = {}
 project_file_dict = {}
 
