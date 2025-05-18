@@ -1,5 +1,5 @@
 # openparem_tools
- OpenParEM helper tools
+ OpenParEM helper tools (MIT licensed)
 
 - Edit OpenParEM project file
 - Edit OpenParEM materials file
